@@ -1,0 +1,40 @@
+name: Build Custom Game IPA
+on:
+  workflow_dispatch: # Allows you to manually trigger the build with a button
+
+jobs:
+  build:
+    runs-on: macos-15 # Uses GitHub's hosted macOS environment
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install System Dependencies
+        run: |
+          brew install xcodegen zstd glslang
+          brew install --cask dotnet-sdk
+          python3 -m pip install lz4 "capstone>=5,<6" fonttools nsz zbic
+
+      - name: Download User Keys and Game Files
+        run: |
+          mkdir -p ~/keys
+          mkdir -p ~/Games/TargetGame
+          # Downloads your files securely using the secrets you saved
+          curl -L "${{ secrets.KEYS_URL }}" -o ~/keys/prod.keys
+          curl -L "${{ secrets.GAME_URL }}" -o ~/Games/TargetGame/game.nsp
+
+      - name: Execute nxnative Packing Script
+        run: |
+          python3 scripts/build_ipa_from_nsp.py ~/Games/TargetGame -k ~/keys/prod.keys
+
+      - name: Upload Finished IPA as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-game-ipa
+          path: ~/Games/TargetGame/*.ipa
+          retention-days: 1 # Automatically deletes the file from GitHub after 24 hours
