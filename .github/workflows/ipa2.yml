@@ -1,0 +1,13 @@
+      - name: Game files (Google Drive)
+        env:
+          GDRIVE_NSP_IDS: ${{ secrets.GDRIVE_NSP_IDS }}     # space-separated file IDs
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }} # or one folder ID
+        run: |
+          mkdir -p "$GAME_DIR"
+          python3 -m pip install -q gdown
+          if [ -n "$GDRIVE_FOLDER_ID" ]; then
+            gdown --folder --continue --retries 3 -O "$GAME_DIR" "$GDRIVE_FOLDER_ID"
+          fi
+          for id in $GDRIVE_NSP_IDS; do
+            ( cd "$GAME_DIR" && gdown --fuzzy --continue --retries 3 "$id" )
+          done
